@@ -1,46 +1,50 @@
-from collections import OrderedDict, defaultdict
-from typing import Union
+#!/usr/bin/env python3
+
 from base_caching import BaseCaching
 
 
 class LFUCache(BaseCaching):
-    """ Defines an LFU caching system """
+    """
+    LFUCache class inherits from BaseCaching and represents a caching system
+    """
 
     def __init__(self):
-        """ Initializes the LFU cache """
+        """ Initialize LFUCache instance
+        """
         super().__init__()
-        self.frequency = defaultdict(int)
-        self.last_used = OrderedDict()
+        self.freq_count = {}
+        self.usage_count = {}
 
-    def put(self, key: Union[str, int], item: Union[str, int]) -> None:
-        """ Adds an item to the LFU cache """
+    def put(self, key, item):
+        """ Add an item to the cache using LFU algorithm
+        """
         if key is None or item is None:
             return
 
+        if len(self.cache_data) >= BaseCaching.MAX_ITEMS:
+            self._discard_lfu()
+
+        self.freq_count[key] = self.freq_count.get(key, 0) + 1
+        self.usage_count[key] = 0
         self.cache_data[key] = item
-        self.frequency[key] += 1
-        self.last_used[key] = 0
 
-        if len(self.cache_data) > BaseCaching.MAX_ITEMS:
-            self._discard_least_frequent()
-
-    def get(self, key: Union[str, int]) -> Union[str, int, None]:
-        """ Retrieves an item from the LFU cache """
+    def get(self, key):
+        """ Retrieve item from cache based on key
+        """
         if key is None or key not in self.cache_data:
             return None
 
-        self.frequency[key] += 1
-        self.last_used[key] = 0
+        self.usage_count[key] += 1
         return self.cache_data[key]
 
-    def _discard_least_frequent(self) -> None:
-        """ Discards the least frequent item from the LFU cache """
-        min_freq = min(self.frequency.values())
-        least_freq_keys = [
-                k for k, v in self.frequency.items() if v == min_freq
-                ]
-        lfu_key = min(least_freq_keys, key=lambda k: self.last_used[k])
+    def _discard_lfu(self):
+        """ Discard least frequently used item (LFU)
+        """
+        min_freq = min(self.freq_count.values())
+        lfu_keys = [k for k, v in self.freq_count.items() if v == min_freq]
+        lru_key = min(lfu_keys, key=lambda k: self.usage_count[k])
 
-        self.cache_data.pop(lfu_key)
-        self.frequency.pop(lfu_key)
-        self.last_used.pop(lfu_key)
+        del self.cache_data[lru_key]
+        del self.freq_count[lru_key]
+        del self.usage_count[lru_key]
+        print("DISCARD:", lru_key)
