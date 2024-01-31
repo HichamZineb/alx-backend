@@ -2,51 +2,49 @@
 """
 100-lfu_cache module
 """
-from base_caching import BaseCaching
+
+from collections import OrderedDict, defaultdict
+from typing import Union
 
 
 class LFUCache(BaseCaching):
-    """ LFUCache class """
+    """ Defines an LFU caching system """
 
     def __init__(self):
-        """ Initialize """
+        """ Initializes the LFU cache """
         super().__init__()
-        self.frequency = {}
+        self.frequency = defaultdict(int)
+        self.last_used = OrderedDict()
 
-    def put(self, key, item):
-        """ Add an item in the cache """
-        if key is not None and item is not None:
-            if key in self.cache_data:
-                # Update frequency for LFU
-                self.frequency[key] += 1
-            elif len(self.cache_data) >= BaseCaching.MAX_ITEMS:
-                # Discard the least frequency used item (LFU algorithm)
-                min_freq = min(self.frequency.values())
-                least_freq_keys = [
-                        k for k, v in self.frequency.items() if v == min_freq
-                        ]
+    def put(self, key: Union[str, int], item: Union[str, int]) -> None:
+        """ Adds an item to the LFU cache """
+        if key is None or item is None:
+            return
 
-                if len(least_freq_keys) > 1:
-                    lru_key = min(
-                            self.cache_data,
-                            key=lambda k: self.cache_data[k]["last_used"]
-                            )
-                    least_freq_keys = [lru_key]
+        self.cache_data[key] = item
+        self.frequency[key] += 1
+        self.last_used[key] = 0
 
-                discarded_key = least_freq_keys[0]
-                del self.cache_data[discarded_key]
-                del self.frequency[discarded_key]
-                print("DISCARD:", discarded_key)
+        if len(self.cache_data) > BaseCaching.MAX_ITEMS:
+            self._discard_least_frequent()
 
-            # Update cache and frequency
-            self.cache_data[key] = {"item": item, "last_used": 0}
-            self.frequency[key] = 1
+    def get(self, key: Union[str, int]) -> Union[str, int, None]:
+        """ Retrieves an item from the LFU cache """
+        if key is None or key not in self.cache_data:
+            return None
 
-    def get(self, key):
-        """ Get an item by key """
-        if key in self.cache_data:
-            # Update frequency and last_used for LFU
-            self.frequency[key] += 1
-            self.cache_data[key]["last_used"] += 1
-            return self.cache_data[key]["item"]
-        return None
+        self.frequency[key] += 1
+        self.last_used[key] = 0
+        return self.cache_data[key]
+
+    def _discard_least_frequent(self) -> None:
+        """ Discards the least frequent item from the LFU cache """
+        min_freq = min(self.frequency.values())
+        least_freq_keys = [
+                k for k, v in self.frequency.items() if v == min_freq
+                ]
+        lfu_key = min(least_freq_keys, key=lambda k: self.last_used[k])
+
+        self.cache_data.pop(lfu_key)
+        self.frequency.pop(lfu_key)
+        self.last_used.pop(lfu_key)
