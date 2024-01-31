@@ -1,10 +1,6 @@
-#!/usr/bin/env python3
-"""
-100-lfu_cache module
-"""
-
 from collections import OrderedDict, defaultdict
 from typing import Union
+from base_caching import BaseCaching
 
 
 class LFUCache(BaseCaching):
