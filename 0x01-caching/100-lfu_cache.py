@@ -39,10 +39,7 @@ class LFUCache(BaseCaching):
                 print("DISCARD:", discarded_key)
 
             # Update cache and frequency
-            self.cache_data[key] = {
-                "item": item,
-                "last_used": 0
-            }
+            self.cache_data[key] = {"item": item, "last_used": 0}
             self.frequency[key] = 1
 
     def get(self, key):
